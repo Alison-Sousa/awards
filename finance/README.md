@@ -1,20 +1,26 @@
-# 📈 Análise Fundamentalista
+# 📈 Fundamental Analysis
 
-Dashboard interativo para analisar ações em tempo real. Permite visualização de indicadores financeiros, gráficos, comparações entre empresas e análise de valuation.
+Dashboard for real-time stock analysis. Enables visualization of financial indicators, charts, company comparisons, and valuation analysis.
 
 ![Dashboard](app.gif)
 
-## 🔍 Funcionalidades
+## 🔍 Features
 
-- Consulta individual de ações (ex: AAPL, PETR4.SA, entre outras) 
-- Comparação entre múltiplas empresas
-- Indicadores de valuation, eficiência, endividamento e rentabilidade  
-- Gráficos com preço-alvo  
-- Tabela fundamentalista completa (DRE, Balanço, Fluxo de Caixa)  
-- Download em CSV para comparações  
-- Interface interativa
+- Individual stock lookup (e.g., AAPL, PETR4.SA, etc.)
+- Multi-company comparison
+- Valuation, efficiency, leverage, and profitability indicators  
+- Target price charts  
+- Complete fundamental tables (Income Statement, Balance Sheet, Cash Flow)  
+- CSV download for comparisons  
+- Interactive interface
 
-## 📡 Fontes de Dados
+## 📡 Data Sources
 
 - [Yahoo Finance](https://finance.yahoo.com/) via `yfinance`  
-- Dados financeiros atualizados automaticamente
+- Financial data updated automatically
+
+---
+
+🏆 **Award for Investment Research Excellence**
+
+This project was recognized at the CFA Institute Research Challenge.

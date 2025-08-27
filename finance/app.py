@@ -9,10 +9,10 @@ import io
 from PIL import Image
 import base64
 
-# Configuração da página
-st.set_page_config(layout="wide", page_title="Análise Fundamentalista", page_icon="📊")
+# Page configuration
+st.set_page_config(layout="wide", page_title="Fundamental Analysis", page_icon="📊")
 
-# CSS customizado
+# Custom CSS
 st.markdown("""
 <style>
     .stApp {
@@ -116,156 +116,196 @@ def compare_stocks(tickers):
     
     return pd.DataFrame(comparison_data)
 
-# Interface principal
-st.title("📊 Análise Fundamentalista")
 
-# Abas para análise única ou comparação
-tab_single, tab_compare = st.tabs(["Análise Individual", "Comparar Ações"])
+# Main interface
+col_logo, col_title = st.columns([1, 6])
+with col_logo:
+    st.image("logo.png", width=500)
+with col_title:
+    st.markdown("<div style='margin-left:900px'><h1>Fundamental Analysis</h1></div>", unsafe_allow_html=True)
+
+# Tabs for single analysis or comparison
+tab_single, tab_compare = st.tabs(["Single Analysis", "Compare Stocks"])
 
 with tab_single:
-    ticker = st.text_input("Digite o ticker da ação (ex: AAPL, PETR4.SA):", "AAPL", key="single_ticker").upper()
-    
 
+    ticker = st.text_input("Enter the stock ticker (e.g., AAPL, PETR4.SA):", "AAPL", key="single_ticker").upper()
+
+    # Price chart period option
+    period = st.selectbox("Price chart period:", ["1 year", "5 years", "10 years"], index=0)
+    period_map = {"1 year": "1y", "5 years": "5y", "10 years": "10y"}
 
     if ticker:
         try:
-            stock, info, hist = get_stock_data(ticker)
-            
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            hist = stock.history(period=period_map[period])
+
             if not info or 'currentPrice' not in info:
                 st.error("Ticker não encontrado ou dados indisponíveis")
                 st.stop()
-            
+
             col1, col2, col3 = st.columns([1, 1, 2])
-            
+
             with col1:
                 st.markdown(f"### {info.get('longName', ticker)}")
-                st.markdown(f"**Setor:** {info.get('sector', '-')}")
-                st.markdown(f"**Indústria:** {info.get('industry', '-')}")
-                
+                st.markdown(f"**Sector:** {info.get('sector', '-')}" )
+                st.markdown(f"**Industry:** {info.get('industry', '-')}" )
+
                 current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
                 previous_close = info.get('previousClose', current_price)
                 change_percent = ((current_price - previous_close) / previous_close) * 100
-                
-                st.markdown("### Preço Atual")
+
+                st.markdown("### Current Price")
                 st.markdown(f"<h2 style='color: {'green' if change_percent >= 0 else 'red'}'>{current_price:.2f}</h2>", 
                            unsafe_allow_html=True)
                 st.markdown(f"<span class={'positive' if change_percent >= 0 else 'negative'}>"
-                           f"{change_percent:.2f}% ({current_price - previous_close:.2f})</span> vs fechamento anterior",
+                           f"{change_percent:.2f}% ({current_price - previous_close:.2f})</span> vs previous close",
                            unsafe_allow_html=True)
-                
+
                 target_price = info.get('targetMeanPrice', None)
                 if target_price:
                     potential = ((target_price - current_price) / current_price) * 100
-                    st.markdown("### Preço-Alvo")
-                    st.markdown(f"**Média dos Analistas:** {target_price:.2f}")
-                    st.markdown(f"**Potencial:** <span class={'positive' if potential >= 0 else 'negative'}>"
+                    st.markdown("### Target Price")
+                    st.markdown(f"**Analyst Mean:** {target_price:.2f}")
+                    st.markdown(f"**Potential:** <span class={'positive' if potential >= 0 else 'negative'}>"
                                f"{potential:.2f}%</span>", unsafe_allow_html=True)
-            
+
             with col2:
                 st.markdown("### Valuation")
-                
+
                 valuation_data = {
-                    "P/L": info.get('trailingPE'),
-                    "P/VP": info.get('priceToBook'),
+                    "P/E": info.get('trailingPE'),
+                    "P/B": info.get('priceToBook'),
                     "EV/EBITDA": info.get('enterpriseToEbitda'),
                     "Dividend Yield": f"{info.get('dividendYield', 0)*100:.2f}%" if info.get('dividendYield') else "-",
-                    "VP/ação": info.get('bookValue'),
-                    "Lucro/ação": info.get('trailingEps')
+                    "Book Value/Share": info.get('bookValue'),
+                    "Earnings/Share": info.get('trailingEps')
                 }
-                
+
                 for metric, value in valuation_data.items():
                     st.markdown(f"**{metric}:** {value if value else '-'}")
-                
+
                 market_cap = info.get('marketCap')
-                st.markdown(f"**Valor de Mercado:** {format_number(market_cap) if market_cap else '-'}")
-            
+                st.markdown(f"**Market Cap:** {format_number(market_cap) if market_cap else '-'}")
+
             with col3:
                 fig = go.Figure()
-                fig.add_trace(go.Candlestick(
-                    x=hist.index,
-                    open=hist['Open'],
-                    high=hist['High'],
-                    low=hist['Low'],
-                    close=hist['Close'],
-                    name='Preço'
-                ))
-                
+                if not hist.empty:
+                    fig.add_trace(go.Candlestick(
+                        x=hist.index,
+                        open=hist['Open'],
+                        high=hist['High'],
+                        low=hist['Low'],
+                        close=hist['Close'],
+                        name='Preço'
+                    ))
+
                 if target_price:
                     fig.add_hline(y=target_price, line_dash="dot", 
                                  annotation_text=f"Preço-Alvo: {target_price:.2f}", 
                                  line_color="green")
-                
+
                 fig.update_layout(
-                    title=f"Histórico de Preços - {ticker}",
+                    title=f"Price History - {ticker} ({period})",
                     xaxis_rangeslider_visible=False,
                     height=400
                 )
                 st.plotly_chart(fig, use_container_width=True)
-            
+
             st.markdown("---")
-            st.markdown("## Indicadores Financeiros")
+            st.markdown("## Financial Indicators")
             
             col4, col5, col6 = st.columns(3)
             
             with col4:
-                st.markdown("### Endividamento")
+                st.markdown("### Leverage")
                 debt_data = {
-                    "Div. Liq. / VP": info.get('debtToEquity'),
-                    "Div. Liq. /EBITDA": info.get('debtToEbitda'),
-                    "Liq. Corrente": info.get('currentRatio')
+                    "Net Debt / Equity": info.get('debtToEquity'),
+                    "Net Debt / EBITDA": info.get('debtToEbitda'),
+                    "Current Ratio": info.get('currentRatio')
                 }
                 for metric, value in debt_data.items():
                     st.markdown(f"**{metric}:** {value if value else '-'}")
             
             with col5:
-                st.markdown("### Eficiência")
+                st.markdown("### Efficiency")
                 efficiency_data = {
-                    "Margem Bruta": f"{info.get('grossMargins', 0)*100:.2f}%" if info.get('grossMargins') else "-",
-                    "Margem EBITDA": f"{info.get('ebitdaMargins', 0)*100:.2f}%" if info.get('ebitdaMargins') else "-",
-                    "Margem Líquida": f"{info.get('profitMargins', 0)*100:.2f}%" if info.get('profitMargins') else "-"
+                    "Gross Margin": f"{info.get('grossMargins', 0)*100:.2f}%" if info.get('grossMargins') else "-",
+                    "EBITDA Margin": f"{info.get('ebitdaMargins', 0)*100:.2f}%" if info.get('ebitdaMargins') else "-",
+                    "Net Margin": f"{info.get('profitMargins', 0)*100:.2f}%" if info.get('profitMargins') else "-"
                 }
                 for metric, value in efficiency_data.items():
                     st.markdown(f"**{metric}:** {value}")
             
             with col6:
-                st.markdown("### Rentabilidade")
+                st.markdown("### Profitability")
                 profitability_data = {
                     "ROE": f"{info.get('returnOnEquity', 0)*100:.2f}%" if info.get('returnOnEquity') else "-",
                     "ROA": f"{info.get('returnOnAssets', 0)*100:.2f}%" if info.get('returnOnAssets') else "-",
                     "ROIC": f"{info.get('returnOnInvestedCapital', 0)*100:.2f}%" if info.get('returnOnInvestedCapital') else "-",
-                    "Giro Ativos": info.get('assetTurnover')
+                    "Asset Turnover": info.get('assetTurnover')
                 }
                 for metric, value in profitability_data.items():
                     st.markdown(f"**{metric}:** {value}")
             
             st.markdown("---")
-            st.markdown("## Dados Fundamentais Completos")
+            st.markdown("## Fundamental Data")
             
             try:
-                tab1, tab2, tab3 = st.tabs(["DRE", "Balanço", "Fluxo de Caixa"])
-                
+                tab1, tab2, tab3 = st.tabs(["Income Statement", "Balance Sheet", "Cash Flow"])
+
+                # DRE (Income Statement) - últimos 10 anos
                 with tab1:
-                    income_stmt = stock.financials
-                    if not income_stmt.empty:
-                        st.dataframe(income_stmt.style.format("${:,.0f}"))
-                    else:
-                        st.warning("Dados não disponíveis")
-                
+                    try:
+                        income_stmt = stock.financials
+                        if income_stmt is not None and not income_stmt.empty:
+                            df_income = income_stmt.copy().T
+                            styled = df_income.style.format("${:,.0f}") \
+                                .set_properties(**{"border": "1px solid #ccc", "font-size": "13px"}) \
+                                .set_table_styles([
+                                    {"selector": "th", "props": [("background-color", "#1f77b4"), ("color", "white"), ("font-weight", "bold")]} ,
+                                    {"selector": "tr:nth-child(even)", "props": [("background-color", "#f2f2f2")]}])
+                            st.dataframe(styled, use_container_width=True)
+                        else:
+                            st.warning("Data not available.")
+                    except Exception as e:
+                        st.warning(f"Error loading Income Statement: {str(e)}")
+
+                # Balanço Patrimonial - últimos 10 anos
                 with tab2:
-                    balance_sheet = stock.balance_sheet
-                    if not balance_sheet.empty:
-                        st.dataframe(balance_sheet.style.format("${:,.0f}"))
-                    else:
-                        st.warning("Dados não disponíveis")
-                
+                    try:
+                        balance_sheet = stock.balance_sheet
+                        if balance_sheet is not None and not balance_sheet.empty:
+                            df_bal = balance_sheet.copy().T
+                            styled = df_bal.style.format("${:,.0f}") \
+                                .set_properties(**{"border": "1px solid #ccc", "font-size": "13px"}) \
+                                .set_table_styles([
+                                    {"selector": "th", "props": [("background-color", "#1f77b4"), ("color", "white"), ("font-weight", "bold")]} ,
+                                    {"selector": "tr:nth-child(even)", "props": [("background-color", "#f2f2f2")]}])
+                            st.dataframe(styled, use_container_width=True)
+                        else:
+                            st.warning("Data not available.")
+                    except Exception as e:
+                        st.warning(f"Error loading Balance Sheet: {str(e)}")
+
+                # Fluxo de Caixa - últimos 10 anos
                 with tab3:
-                    cashflow = stock.cashflow
-                    if not cashflow.empty:
-                        st.dataframe(cashflow.style.format("${:,.0f}"))
-                    else:
-                        st.warning("Dados não disponíveis")
-                        
-            
+                    try:
+                        cashflow = stock.cashflow
+                        if cashflow is not None and not cashflow.empty:
+                            df_cf = cashflow.copy().T
+                            styled = df_cf.style.format("${:,.0f}") \
+                                .set_properties(**{"border": "1px solid #ccc", "font-size": "13px"}) \
+                                .set_table_styles([
+                                    {"selector": "th", "props": [("background-color", "#1f77b4"), ("color", "white"), ("font-weight", "bold")]} ,
+                                    {"selector": "tr:nth-child(even)", "props": [("background-color", "#f2f2f2")]}])
+                            st.dataframe(styled, use_container_width=True)
+                        else:
+                            st.warning("Data not available.")
+                    except Exception as e:
+                        st.warning(f"Error loading Cash Flow: {str(e)}")
+
             except Exception as e:
                 st.error(f"Erro ao carregar dados fundamentais: {str(e)}")
         
@@ -275,8 +315,8 @@ with tab_single:
             
 
 with tab_compare:
-    st.markdown("### 🔍 Comparação entre Ações")
-    
+    st.markdown("### 🔍 Stock Comparison")
+
     col1, col2, col3 = st.columns(3)
     with col1:
         ticker1 = st.text_input("Ticker 1:", "AAPL").upper()
@@ -284,25 +324,25 @@ with tab_compare:
         ticker2 = st.text_input("Ticker 2:", "MSFT").upper()
     with col3:
         ticker3 = st.text_input("Ticker 3:", "GOOGL").upper()
-    
-    if st.button("Comparar"):
+
+    if st.button("Compare"):
         tickers = [t for t in [ticker1, ticker2, ticker3] if t]
-        
+
         if len(tickers) < 2:
-            st.warning("Digite pelo menos 2 tickers para comparar")
+            st.warning("Enter at least 2 tickers to compare")
         else:
-            with st.spinner("Coletando dados..."):
+            with st.spinner("Collecting data..."):
                 comparison_df = compare_stocks(tickers)
-                
+
                 if not comparison_df.empty:
                     formatted_df = comparison_df.copy()
                     formatted_df['Valor Mercado'] = formatted_df['Valor Mercado'].apply(format_number)
                     formatted_df['Potencial'] = formatted_df['Potencial'].apply(lambda x: f"{x:.2f}%" if pd.notnull(x) else "-")
-                    
+
                     for col in ['Preço Atual', 'Preço-Alvo', 'P/L', 'P/VP', 'Dividend Yield', 'ROE', 'Margem Líq.']:
                         formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:.2f}" if pd.notnull(x) else "-")
-                    
-                    st.markdown("#### Comparativo entre Ações")
+
+                    st.markdown("#### Stock Comparison Table")
                     st.dataframe(
                         formatted_df.set_index('Ticker').style.applymap(
                             lambda x: 'color: green' if '%' in str(x) and '-' not in str(x) and float(x.replace('%','')) > 0 
@@ -311,19 +351,19 @@ with tab_compare:
                         ),
                         use_container_width=True
                     )
-                    
-                    # Botão para baixar os dados
+
+                    # Download button
                     csv = formatted_df.to_csv(index=False).encode('utf-8')
                     st.download_button(
-                        "📥 Baixar Dados da Comparação",
+                        "📥 Download Comparison Data",
                         csv,
-                        "comparacao_acoes.csv",
+                        "stock_comparison.csv",
                         "text/csv",
                         key='download-comparison'
                     )
-                    
+
                     fig_compare = go.Figure()
-                    
+
                     for ticker in tickers:
                         try:
                             _, _, hist = get_stock_data(ticker)
@@ -335,13 +375,13 @@ with tab_compare:
                             ))
                         except:
                             continue
-                    
+
                     fig_compare.update_layout(
-                        title="Comparação de Preços (12 meses)",
-                        xaxis_title="Data",
-                        yaxis_title="Preço (USD)",
+                        title="Price Comparison (12 months)",
+                        xaxis_title="Date",
+                        yaxis_title="Price (USD)",
                         height=400
                     )
                     st.plotly_chart(fig_compare, use_container_width=True)
                 else:
-                    st.error("Não foi possível obter dados para comparação")
+                    st.error("Could not retrieve data for comparison")
