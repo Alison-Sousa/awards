@@ -1,4 +1,4 @@
-# 📊📈 Desafio Itaú Quantamental
+# 📊 Itaú Quantamental Challenge
 
 App for quantitative analysis of B3 stocks including risk-return metrics and benchmark comparison.
 
