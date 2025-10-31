@@ -21,6 +21,6 @@ Dashboard for real-time stock analysis. Enables visualization of financial indic
 
 ---
 
-🏆 **Awarded Investment Research**
+🏆 **Award**
 
 This project was recognized with distinction by the President of the CFA Institute Research Challenge.

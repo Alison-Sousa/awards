@@ -38,6 +38,6 @@ App for quantitative analysis of B3 stocks including risk-return metrics and ben
    
    -Stock price data is sourced from Yahoo Finance.
 
-🏆 **Awarded Quantamental Challenge**
+🏆 **Award**
 
 This project was recognized with distinction by the Head of Itaú Asset Management.
