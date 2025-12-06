@@ -255,7 +255,7 @@ with tab_single:
             try:
                 tab1, tab2, tab3 = st.tabs(["Income Statement", "Balance Sheet", "Cash Flow"])
 
-                # DRE (Income Statement) - últimos 10 anos
+                # Income Statement
                 with tab1:
                     try:
                         income_stmt = stock.financials
@@ -272,7 +272,7 @@ with tab_single:
                     except Exception as e:
                         st.warning(f"Error loading Income Statement: {str(e)}")
 
-                # Balanço Patrimonial - últimos 10 anos
+                # Balance Sheet
                 with tab2:
                     try:
                         balance_sheet = stock.balance_sheet
@@ -289,7 +289,7 @@ with tab_single:
                     except Exception as e:
                         st.warning(f"Error loading Balance Sheet: {str(e)}")
 
-                # Fluxo de Caixa - últimos 10 anos
+                # Cash Flow
                 with tab3:
                     try:
                         cashflow = stock.cashflow

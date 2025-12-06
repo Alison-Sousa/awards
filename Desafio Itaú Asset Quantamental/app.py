@@ -8,29 +8,25 @@ import requests
 from streamlit_extras.metric_cards import style_metric_cards
 from streamlit_extras.grid import grid
 
-# Configuração da página deve ser a primeira coisa a ser chamada
 st.set_page_config(layout="wide")
 
-# Title of the application
 st.title("Investment Analysis")
 
-# Add the itau.svg image in the sidebar
 st.sidebar.image("itau.svg", use_column_width=True)
 
 @st.cache_data
 def get_tickers():
-    """Get the list of tickers from the CSV file."""
-    ticker_list = pd.read_csv("tickers.csv", header=None)  # No header
-    options = ticker_list.iloc[:, 1].tolist()  # The second column contains the tickers (ignores index 0)
-    options = [t for t in options if t != '0']  # Remove '0' from the list
+    ticker_list = pd.read_csv("tickers.csv", header=None)
+    options = ticker_list.iloc[:, 1].tolist() 
+    options = [t for t in options if t != '0']  
     return options
 
 def build_sidebar():
-    options = get_tickers()  # Fetch the tickers
+    options = get_tickers()  
     st.title("Select Companies")
 
     tickers = st.multiselect(label="Select Companies", options=options, placeholder='Codes')
-    tickers = [t + ".SA" for t in tickers]  # Append the .SA suffix only for selected tickers
+    tickers = [t + ".SA" for t in tickers]  
 
     start_date = st.date_input("From", format="DD/MM/YYYY", value=datetime(2023, 1, 2))
     end_date = st.date_input("To", format="DD/MM/YYYY", value="today")
@@ -56,7 +52,7 @@ def build_sidebar():
     return None, None
 
 def build_main(tickers, prices):
-    index_col = prices.columns[-1]  # Remove a referência ao IBOVESPA
+    index_col = prices.columns[-1]  
 
     weights = np.ones(len(tickers)) / len(tickers)
     prices['portfolio'] = prices.drop(index_col, axis=1) @ weights
@@ -71,14 +67,14 @@ def build_main(tickers, prices):
         c.subheader(ticker, divider="red")
         colA, colB, colC = c.columns(3)
 
-        # Define logo URL com condições
-        ticker_clean = ticker.rstrip('.SA')  # Remove a extensão .SA
+        
+        ticker_clean = ticker.rstrip('.SA')  
         logo_url = None
 
         if ticker == "^BVSP":
-            logo_url = "bov.png"  # Logo da B3 para IBOVESPA
+            logo_url = "bov.png"  
         elif ticker == "portfolio":
-            logo_url = "chart.svg"  # Ícone de portfólio
+            logo_url = "chart.svg"  
         else:
             stock_info = yf.Ticker(ticker_clean).info
             logo_url = stock_info.get('logo_url', None)
@@ -86,7 +82,7 @@ def build_main(tickers, prices):
                 logo_url = f'https://raw.githubusercontent.com/thefintz/icones-b3/main/icones/{ticker_clean}.png'  # Imagem padrão
 
         if logo_url:
-            colA.image(logo_url, width=100)  # Ajustei a largura da imagem para 100
+            colA.image(logo_url, width=100) 
         else:
             colA.write("🔍 Logo não disponível")
 
